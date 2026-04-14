@@ -2,11 +2,13 @@
 
 import { useEffect, useRef, useState } from "react";
 
+const R2 = "https://pub-23fa955baed44f0fafb4de11984f89f8.r2.dev";
+
 const VIDEOS = [
-  "/videos/praia_1.mp4",
-  "/videos/montanha.mp4",
-  "/videos/cidade.mp4",
-  "/videos/mar.mp4",
+  `${R2}/praia_1.mp4`,
+  `${R2}/montanha.mp4`,
+  `${R2}/cidade.mp4`,
+  `${R2}/mar.mp4`,
 ];
 
 const DURACAO_MS = 8000;
