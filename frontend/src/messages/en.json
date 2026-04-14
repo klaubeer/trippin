@@ -1,0 +1,67 @@
+{
+  "navegacao": {
+    "inicio": "Home",
+    "planejar": "Plan Trip",
+    "minhasViagens": "My Trips",
+    "entrar": "Sign In",
+    "sair": "Sign Out",
+    "criarConta": "Create Account"
+  },
+  "inicio": {
+    "titulo": "Plan your dream trip with AI",
+    "subtitulo": "Enter your destination and dates. Our AI searches for flights, hotels, and activities, generating 3 complete itineraries for you to choose from.",
+    "ctaPrincipal": "Plan Now",
+    "ctaDemo": "View Demo",
+    "origemInfo": "Departing from São Paulo (GRU)",
+    "bannerSandbox": "Demo data via Amadeus Sandbox"
+  },
+  "planejar": {
+    "titulo": "Where are we going?",
+    "campoDestino": "Destination",
+    "placeholderDestino": "E.g.: Paris, Tokyo, New York...",
+    "campoDataInicio": "Departure date",
+    "campoDataFim": "Return date",
+    "campoViajantes": "Travelers",
+    "botaoGerar": "Generate Itineraries",
+    "erroDatasPassadas": "Departure date must be in the future",
+    "erroDatasOrdem": "Return date must be after departure date",
+    "erroDuracaoMaxima": "Trip can be at most 30 days long",
+    "erroDestinoObrigatorio": "Please enter a destination"
+  },
+  "progresso": {
+    "titulo": "Generating your itineraries...",
+    "agenteVoos": "Searching flights",
+    "agenteHoteis": "Finding hotels",
+    "agenteAtividades": "Discovering activities",
+    "arquitetoRoteiros": "Building itineraries",
+    "concluido": "Done!",
+    "falhou": "Something went wrong. Please try again."
+  },
+  "roteiro": {
+    "economico": "Budget",
+    "conforto": "Comfort",
+    "premium": "Premium",
+    "custoTotal": "Estimated total cost",
+    "voos": "Flights",
+    "hospedagem": "Accommodation",
+    "atividades": "Activities",
+    "dia": "Day",
+    "mapa": "Map",
+    "compartilhar": "Share",
+    "baixarPdf": "Download PDF",
+    "linkCopiado": "Link copied!"
+  },
+  "minhasViagens": {
+    "titulo": "My Trips",
+    "semViagens": "You haven't planned any trips yet.",
+    "statusPendente": "Pending",
+    "statusProcessando": "Processing",
+    "statusConcluido": "Completed",
+    "statusFalhou": "Failed"
+  },
+  "erros": {
+    "geral": "An error occurred. Please try again.",
+    "limitExcedido": "You've reached the limit of 5 trips per hour. Please try again later.",
+    "naoAutorizado": "You need to be logged in to do that."
+  }
+}

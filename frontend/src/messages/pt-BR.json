@@ -1,0 +1,67 @@
+{
+  "navegacao": {
+    "inicio": "Início",
+    "planejar": "Planejar Viagem",
+    "minhasViagens": "Minhas Viagens",
+    "entrar": "Entrar",
+    "sair": "Sair",
+    "criarConta": "Criar Conta"
+  },
+  "inicio": {
+    "titulo": "Planeje sua viagem dos sonhos com IA",
+    "subtitulo": "Informe o destino e as datas. Nossa IA pesquisa voos, hotéis e atividades e gera 3 roteiros completos para você escolher.",
+    "ctaPrincipal": "Planejar Agora",
+    "ctaDemo": "Ver Demo",
+    "origemInfo": "Planeje sua viagem de qualquer origem",
+    "bannerSandbox": "Dados de demonstração via Amadeus Sandbox"
+  },
+  "planejar": {
+    "titulo": "Para onde vamos?",
+    "campoDestino": "Destino",
+    "placeholderDestino": "Ex: Paris, Tokyo, New York...",
+    "campoDataInicio": "Data de ida",
+    "campoDataFim": "Data de volta",
+    "campoViajantes": "Viajantes",
+    "botaoGerar": "Gerar Roteiros",
+    "erroDatasPassadas": "A data de ida deve ser no futuro",
+    "erroDatasOrdem": "A data de volta deve ser após a data de ida",
+    "erroDuracaoMaxima": "A viagem pode ter no máximo 30 dias",
+    "erroDestinoObrigatorio": "Informe o destino da viagem"
+  },
+  "progresso": {
+    "titulo": "Gerando seus roteiros...",
+    "agenteVoos": "Pesquisando voos",
+    "agenteHoteis": "Buscando hotéis",
+    "agenteAtividades": "Descobrindo atividades",
+    "arquitetoRoteiros": "Montando roteiros",
+    "concluido": "Pronto!",
+    "falhou": "Algo deu errado. Tente novamente."
+  },
+  "roteiro": {
+    "economico": "Econômico",
+    "conforto": "Conforto",
+    "premium": "Premium",
+    "custoTotal": "Custo estimado total",
+    "voos": "Voos",
+    "hospedagem": "Hospedagem",
+    "atividades": "Atividades",
+    "dia": "Dia",
+    "mapa": "Mapa",
+    "compartilhar": "Compartilhar",
+    "baixarPdf": "Baixar PDF",
+    "linkCopiado": "Link copiado!"
+  },
+  "minhasViagens": {
+    "titulo": "Minhas Viagens",
+    "semViagens": "Você ainda não planejou nenhuma viagem.",
+    "statusPendente": "Pendente",
+    "statusProcessando": "Processando",
+    "statusConcluido": "Concluído",
+    "statusFalhou": "Falhou"
+  },
+  "erros": {
+    "geral": "Ocorreu um erro. Tente novamente.",
+    "limitExcedido": "Você atingiu o limite de 5 viagens por hora. Tente mais tarde.",
+    "naoAutorizado": "Você precisa estar logado para isso."
+  }
+}

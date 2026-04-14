@@ -1,0 +1,82 @@
+services:
+  backend:
+    build: ./backend
+    container_name: trippin_backend
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+    volumes:
+      - ./backend:/app
+      - logs_data:/app/logs
+    ports:
+      - "8002:8000"
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://trippin:trippin@postgres:5432/trippin
+      - REDIS_URL=redis://redis:6379/0
+      - CORS_ORIGENS=["http://localhost:3001","http://localhost:3000"]
+    env_file:
+      - .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+  celery:
+    build: ./backend
+    container_name: trippin_celery
+    command: celery -A tarefas.worker worker --loglevel=info
+    working_dir: /app
+    volumes:
+      - ./backend:/app
+      - logs_data:/app/logs
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://trippin:trippin@postgres:5432/trippin
+      - REDIS_URL=redis://redis:6379/0
+      - PYTHONPATH=/app
+    env_file:
+      - .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+  frontend:
+    build: ./frontend
+    container_name: trippin_frontend
+    command: npm run dev
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    ports:
+      - "3001:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8002
+    depends_on:
+      - backend
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: trippin_postgres
+    environment:
+      POSTGRES_USER: trippin
+      POSTGRES_PASSWORD: trippin
+      POSTGRES_DB: trippin
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U trippin"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: trippin_redis
+    ports:
+      - "6379:6379"
+
+volumes:
+  postgres_data:
+  logs_data:
