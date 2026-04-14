@@ -52,6 +52,9 @@ services:
       args:
         - NEXT_PUBLIC_API_URL=https://trippin.klauberfischer.online
     container_name: trippin-frontend
+    environment:
+      - HOSTNAME=0.0.0.0
+      - PORT=3000
     expose:
       - "3000"
     labels:
