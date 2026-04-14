@@ -4,7 +4,8 @@ import createNextIntlPlugin from "next-intl/plugin";
 const comNextIntl = createNextIntlPlugin("./src/i18n.ts");
 
 const nextConfig: NextConfig = {
-  // Nenhuma config adicional necessária por ora
+  allowedDevOrigins: ["69.62.94.19", "trippin.klauberfischer.online"],
+  output: "standalone",
 };
 
 export default comNextIntl(nextConfig);

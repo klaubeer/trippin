@@ -1,0 +1,103 @@
+services:
+  backend:
+    build: ./backend
+    container_name: trippin-backend
+    command: uvicorn main:app --host 0.0.0.0 --port 8000
+    volumes:
+      - logs_data:/app/logs
+    expose:
+      - "8000"
+    env_file:
+      - .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.trippinapi.rule=Host(`trippin.klauberfischer.online`) && PathPrefix(`/api`)"
+      - "traefik.http.routers.trippinapi.entrypoints=websecure"
+      - "traefik.http.routers.trippinapi.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.trippinapi.priority=10"
+      - "traefik.http.services.trippinapi.loadbalancer.server.port=8000"
+      - "traefik.docker.network=proxy"
+    networks:
+      - proxy
+      - interno
+
+  celery:
+    build: ./backend
+    container_name: trippin-celery
+    command: celery -A tarefas.worker worker --loglevel=info
+    working_dir: /app
+    volumes:
+      - logs_data:/app/logs
+    environment:
+      - PYTHONPATH=/app
+    env_file:
+      - .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    networks:
+      - interno
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.prod
+      args:
+        - NEXT_PUBLIC_API_URL=https://trippin.klauberfischer.online
+    container_name: trippin-frontend
+    expose:
+      - "3000"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.trippin.rule=Host(`trippin.klauberfischer.online`)"
+      - "traefik.http.routers.trippin.entrypoints=websecure"
+      - "traefik.http.routers.trippin.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.trippin.priority=1"
+      - "traefik.http.services.trippin.loadbalancer.server.port=3000"
+      - "traefik.docker.network=proxy"
+    depends_on:
+      - backend
+    networks:
+      - proxy
+      - interno
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: trippin-postgres
+    environment:
+      POSTGRES_USER: trippin
+      POSTGRES_PASSWORD: trippin
+      POSTGRES_DB: trippin
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "PGPASSWORD=$$POSTGRES_PASSWORD psql -h 127.0.0.1 -U $$POSTGRES_USER -d $$POSTGRES_DB -c 'SELECT 1' -q 2>/dev/null | grep -q 1 || exit 1"]
+      start_period: 15s
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - interno
+
+  redis:
+    image: redis:7-alpine
+    container_name: trippin-redis
+    networks:
+      - interno
+
+volumes:
+  postgres_data:
+  logs_data:
+
+networks:
+  proxy:
+    external: true
+  interno:
+    driver: bridge
