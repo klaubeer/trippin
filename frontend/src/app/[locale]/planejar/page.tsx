@@ -245,7 +245,7 @@ export default function PaginaPlanejar() {
     num_viajantes: number;
   }) => {
     try {
-      const solicitacao = await api.viagens.criar(dados, token);
+      const solicitacao = await api.viagens.criar(dados, token ?? "");
       setSolicitacaoId(solicitacao.id);
       setEtapa("progresso");
     } catch (err: unknown) {
