@@ -135,3 +135,8 @@ memory/
 
 # ── Configurações locais do Claude Code ───────────────────────────
 .claude/
+
+# ── Vídeos de background (arquivos grandes — não versionar) ──────────
+frontend/public/videos/*.mp4
+frontend/public/videos/*.webm
+frontend/public/videos/*.mov
