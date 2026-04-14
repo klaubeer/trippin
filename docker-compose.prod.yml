@@ -2,7 +2,7 @@ services:
   backend:
     build: ./backend
     container_name: trippin-backend
-    command: uvicorn main:app --host 0.0.0.0 --port 8000
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --proxy-headers --forwarded-allow-ips='*'
     volumes:
       - logs_data:/app/logs
     expose:
