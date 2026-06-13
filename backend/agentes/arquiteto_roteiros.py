@@ -138,7 +138,7 @@ def executar_arquiteto(
         role="Editor de viagens da Trippin' — voz da marca",
         goal=(
             f"Escrever um resumo curto, específico e com opinião para cada um dos 3 roteiros de "
-            f"{num_dias} dias em {destino}, e validar o custo total de cada tier."
+            f"{num_dias} dias em {destino}."
         ),
         backstory=(
             "Você é a voz editorial da Trippin': um amigo viajado, caloroso e direto, que vende a "
@@ -163,16 +163,17 @@ def executar_arquiteto(
             "- DIFERENCIE de verdade os tiers: econômico (aventura esperta, autêntica e econômica), "
             "conforto (o essencial bem curtido, sem stress), premium (curadoria, exclusividade, mimo). "
             "Nada de clichê de folheto.\n\n"
-            "Valide também o custo total de cada tier (voo + hotel × dias + atividades).\n"
-            "Retorne APENAS JSON válido, sem texto fora dele:\n"
-            '{"economico": {"resumo": "", "custo_total": 0.0}, '
-            '"conforto": {"resumo": "", "custo_total": 0.0}, '
-            '"premium": {"resumo": "", "custo_total": 0.0}}'
+            "NÃO calcule custos nem inclua números/contas — o sistema soma os totais. "
+            "Retorne APENAS o resumo de cada tier, em JSON válido (somente strings, sem expressões "
+            "aritméticas), sem texto fora dele:\n"
+            '{"economico": {"resumo": ""}, '
+            '"conforto": {"resumo": ""}, '
+            '"premium": {"resumo": ""}}'
         ),
         expected_output=(
-            "JSON com 3 chaves (economico, conforto, premium), cada uma com 'resumo' (2–3 frases "
-            "específicas e opinativas, citando bairro/hotel e experiências reais daquele tier) e "
-            "'custo_total' (número)."
+            "JSON com 3 chaves (economico, conforto, premium), cada uma com apenas 'resumo' "
+            "(2–3 frases específicas e opinativas, citando bairro/hotel e experiências reais daquele "
+            "tier). Somente strings — sem custo_total, sem números, sem contas."
         ),
         agent=agente,
     )
