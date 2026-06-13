@@ -9,6 +9,13 @@ services:
       - "8000"
     env_file:
       - .env
+    environment:
+      # Hosts explicitos (container_name) — o backend esta no network `proxy`
+      # compartilhado, onde outros projetos (n8n, evolution) tambem expoem os
+      # aliases `postgres`/`redis`, causando colisao de DNS. Os nomes unicos
+      # resolvem sempre para os containers do trippin. Sobrescreve o .env.
+      - DATABASE_URL=postgresql+asyncpg://trippin:trippin@trippin-postgres:5432/trippin
+      - REDIS_URL=redis://trippin-redis:6379/0
     depends_on:
       postgres:
         condition: service_healthy
@@ -35,6 +42,10 @@ services:
       - logs_data:/app/logs
     environment:
       - PYTHONPATH=/app
+      # Mesmos hosts explicitos do backend, por consistencia e caso o worker
+      # venha a ser ligado ao network `proxy` no futuro.
+      - DATABASE_URL=postgresql+asyncpg://trippin:trippin@trippin-postgres:5432/trippin
+      - REDIS_URL=redis://trippin-redis:6379/0
     env_file:
       - .env
     depends_on:
