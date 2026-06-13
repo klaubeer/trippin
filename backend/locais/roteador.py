@@ -541,7 +541,7 @@ def _buscar_estatico(query: str) -> list[dict]:
     return [{"nome": a["nome"], "iata": a["iata"], "pais": a["pais"]} for a in resultado[:8]]
 
 
-@roteador_locais.get("/")
+@roteador_locais.get("")
 async def buscar_locais(
     q: str = Query(..., min_length=2, description="Nome da cidade"),
 ) -> list[dict]:

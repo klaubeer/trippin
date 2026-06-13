@@ -21,6 +21,7 @@ export default function AutocompleteLocal({ placeholder, label, onSelect }: Prop
   const [sugestoes, setSugestoes] = useState<Local[]>([]);
   const [aberto, setAberto] = useState(false);
   const [selecionado, setSelecionado] = useState(false);
+  const [destacado, setDestacado] = useState(0); // índice da sugestão sob o teclado
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -52,6 +53,7 @@ export default function AutocompleteLocal({ placeholder, label, onSelect }: Prop
           const dados: Local[] = await res.json();
           setSugestoes(dados);
           setAberto(dados.length > 0);
+          setDestacado(0); // destaca a melhor correspondência (Enter completa direto)
         }
       } catch {
         // silencia erros de rede — o campo ainda funciona como texto livre
@@ -76,6 +78,23 @@ export default function AutocompleteLocal({ placeholder, label, onSelect }: Prop
     setSelecionado(false); // permite nova busca se o usuário editar
   }
 
+  // Navegação por teclado: ↑/↓ percorrem, Enter completa, Esc fecha
+  function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (!aberto || sugestoes.length === 0) return;
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setDestacado((i) => (i + 1) % sugestoes.length);
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setDestacado((i) => (i - 1 + sugestoes.length) % sugestoes.length);
+    } else if (e.key === "Enter") {
+      e.preventDefault(); // não submete o formulário; completa a cidade
+      handleSelecionar(sugestoes[destacado] ?? sugestoes[0]);
+    } else if (e.key === "Escape") {
+      setAberto(false);
+    }
+  }
+
   return (
     <div ref={containerRef} className="relative">
       <label className="block text-sm font-medium text-white/70 mb-1">{label}</label>
@@ -83,17 +102,25 @@ export default function AutocompleteLocal({ placeholder, label, onSelect }: Prop
         type="text"
         value={valor}
         onChange={handleChange}
+        onKeyDown={handleKeyDown}
         placeholder={placeholder}
         autoComplete="off"
+        role="combobox"
+        aria-expanded={aberto}
+        aria-autocomplete="list"
         className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-white/40 transition"
       />
       {aberto && sugestoes.length > 0 && (
         <ul className="absolute z-50 w-full mt-1 bg-zinc-900 border border-white/20 rounded-xl shadow-2xl overflow-hidden">
-          {sugestoes.map((local) => (
+          {sugestoes.map((local, i) => (
             <li
               key={local.iata}
               onMouseDown={() => handleSelecionar(local)}
-              className="flex items-center justify-between px-4 py-3 hover:bg-white/10 cursor-pointer transition"
+              onMouseEnter={() => setDestacado(i)}
+              aria-selected={i === destacado}
+              className={`flex items-center justify-between px-4 py-3 cursor-pointer transition ${
+                i === destacado ? "bg-white/15" : "hover:bg-white/10"
+              }`}
             >
               <div>
                 <span className="text-white font-medium">{local.nome}</span>
