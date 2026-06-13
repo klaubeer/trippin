@@ -36,6 +36,19 @@ import viagens.modelos  # noqa
 logger = obter_logger("tarefa.gerar_roteiro")
 
 
+def _truncar(valor, limite: int):
+    """
+    Corta uma string ao limite da coluna do banco (VARCHAR(n)).
+
+    Os prompts agora pedem nomes/descritores mais ricos e opinativos; um valor
+    acima do limite faria o Postgres recusar o INSERT ("value too long") e
+    derrubar a geração inteira. Truncar na borda é preferível a falhar.
+    """
+    if isinstance(valor, str) and len(valor) > limite:
+        return valor[:limite]
+    return valor
+
+
 def _publicar_evento(canal: str, evento: dict) -> None:
     """
     Publica um evento de progresso no canal Redis da solicitação.
@@ -108,29 +121,29 @@ def _salvar_roteiros(solicitacao_id: str, roteiros: dict) -> None:
                 if voo_dados:
                     sessao.add(Voo(
                         roteiro_id=roteiro.id,
-                        companhia=voo_dados.get("companhia", ""),
+                        companhia=_truncar(voo_dados.get("companhia", ""), 100),
                         partida=voo_dados.get("partida"),
                         chegada=voo_dados.get("chegada"),
                         preco=voo_dados.get("preco", 0),
-                        link_reserva=voo_dados.get("link_reserva"),
+                        link_reserva=_truncar(voo_dados.get("link_reserva"), 500),
                     ))
 
             for hotel_dados in dados.get("hospedagens", []):
                 if hotel_dados:
                     sessao.add(Hospedagem(
                         roteiro_id=roteiro.id,
-                        nome=hotel_dados.get("nome", ""),
-                        tipo=hotel_dados.get("tipo"),
+                        nome=_truncar(hotel_dados.get("nome", ""), 200),
+                        tipo=_truncar(hotel_dados.get("tipo"), 100),
                         preco_por_noite=hotel_dados.get("preco_por_noite", 0),
                         avaliacao=hotel_dados.get("avaliacao"),
-                        link_reserva=hotel_dados.get("link_reserva"),
+                        link_reserva=_truncar(hotel_dados.get("link_reserva"), 500),
                     ))
 
             for ativ_dados in dados.get("atividades", []):
                 if ativ_dados:
                     sessao.add(Atividade(
                         roteiro_id=roteiro.id,
-                        nome=ativ_dados.get("nome", ""),
+                        nome=_truncar(ativ_dados.get("nome", ""), 200),
                         dia=ativ_dados.get("dia", 1),
                         horario=ativ_dados.get("horario"),
                         descricao=ativ_dados.get("descricao"),
