@@ -58,11 +58,11 @@ def criar_ferramenta_hoteis(iata_destino: str, data_checkin: str, data_checkout:
         """
         if configuracoes.modo_demo or not configuracoes.amadeus_client_id:
             return (
-                "API Amadeus não configurada. "
-                "Use seu conhecimento para criar 4 opções plausíveis de hospedagem "
-                f"em {iata_destino} para check-in em {data_checkin} e check-out em {data_checkout}. "
-                "Inclua opções que variem de econômico (hostel/ibis) a luxo (5 estrelas). "
-                "Use nomes fictícios mas críveis, preços realistas em BRL e avaliações coerentes."
+                f"Sem API externa — use seu conhecimento real do destino ({iata_destino}), "
+                f"check-in {data_checkin}, check-out {data_checkout}. "
+                "Recomende hospedagens REAIS e nomeadas que você conhece, uma por tier, cada "
+                "uma no bairro certo para aquele perfil. Prefira lugares consagrados a inventar "
+                "nomes. Preços realistas em BRL/noite e avaliação coerente. Siga o briefing da tarefa."
             )
 
         try:
@@ -124,23 +124,23 @@ def executar_agente_hoteis(
     llm = LLM(
         model="openai/gpt-4o-mini",
         api_key=configuracoes.openai_api_key or "sem-chave",
-        temperature=0.3,
+        temperature=0.45,  # alguma personalidade na escolha, mantendo JSON estável
     )
 
     ferramenta_hoteis = criar_ferramenta_hoteis(iata_destino, data_checkin, data_checkout)
 
     agente = Agent(
-        role="Consultora de Hospedagem Internacional",
+        role="Consultora de hospedagem com olhar de quem dorme na cidade",
         goal=(
-            f"Encontrar ou criar as melhores opções de hospedagem em {destino} "
-            "em 3 categorias: econômico, conforto e premium."
+            f"Recomendar UMA hospedagem por tier em {destino} (econômico, conforto, premium), "
+            "cada uma no bairro certo para aquele perfil, com uma razão clara de escolha."
         ),
         backstory=(
-            "Sou consultora de viagens especializada em hospedagem com 12 anos de experiência. "
-            "Conheço profundamente o mercado hoteleiro mundial — desde hostels econômicos até "
-            "resorts de luxo 5 estrelas. Quando não tenho acesso a APIs externas, "
-            "uso meu conhecimento detalhado sobre hotéis reais e preços de mercado "
-            "para criar recomendações críveis e úteis para cada destino."
+            f"Você conhece {destino} cama a cama: sabe quais bairros valem por localização, vibe e "
+            "segurança, e quais hotéis entregam o que prometem. Não recomenda por estrelas no site — "
+            "recomenda pelo que a estadia de fato proporciona: acordar a dois passos do que importa, "
+            "um terraço com a vista certa, um café da manhã que vale a pena. Cada tier merece uma "
+            "decisão de bairro e de caráter diferente, não o mesmo hotel com diária maior."
         ),
         tools=[ferramenta_hoteis],
         llm=llm,
@@ -149,20 +149,29 @@ def executar_agente_hoteis(
 
     tarefa = Task(
         description=(
-            f"Use a ferramenta 'Buscar Hotéis Amadeus' para obter opções de hospedagem "
-            f"em {destino} ({iata_destino}) de {data_checkin} a {data_checkout}. "
-            "Se a ferramenta solicitar que você gere os dados, crie opções plausíveis "
-            "com nomes fictícios mas realistas (no estilo das redes hoteleiras reais: "
-            "Ibis, Mercure, Novotel, Marriott, Four Seasons, etc.), preços em BRL "
-            "compatíveis com o mercado local e avaliações coerentes (de 3.0 a 5.0). "
-            "Classifique em 3 tiers. "
-            "Retorne APENAS JSON válido:\n"
+            f"Recomende hospedagem em {destino} ({iata_destino}), de {data_checkin} a {data_checkout}. "
+            "Use a ferramenta 'Buscar Hotéis Amadeus' como apoio; a curadoria é sua. "
+            "Prefira lugares REAIS e nomeados que você conhece.\n\n"
+
+            "Cada tier tem uma LÓGICA DE ESCOLHA diferente (não é o mesmo hotel mais caro):\n"
+            "• econômico — melhor custo-benefício num bairro autêntico, seguro e bem conectado "
+            "(hostel bom, guesthouse ou 2–3★). O valor está na localização e na vibe, não no luxo.\n"
+            "• conforto — 3–4★ ou boutique bem localizado, a pé das principais atrações, com bom "
+            "café da manhã e quarto confortável. O 'lugar certo' para a maioria das pessoas.\n"
+            "• premium — hotel-destino: ícone, design ou heritage com história, vista, spa ou bar "
+            "célebre. A hospedagem vira parte da experiência da viagem.\n\n"
+
+            "Campos: 'nome' = nome real do hotel. 'tipo' = uma linha editorial CURTA (máx ~80 "
+            "caracteres) com categoria + bairro + 1 diferencial — ex.: 'Boutique no Bairro Alto — "
+            "terraço com vista'. 'preco_por_noite' em BRL realista para a cidade e o tier. "
+            "'avaliacao' coerente (3.0–5.0).\n"
+            "Retorne APENAS JSON válido, sem texto fora dele:\n"
             '{"economico": {"nome": "", "tipo": "", "preco_por_noite": 0.0, "avaliacao": 0.0, "link_reserva": null}, '
             '"conforto": {...}, "premium": {...}}'
         ),
         expected_output=(
-            "JSON com 3 chaves (economico, conforto, premium), "
-            "cada uma com nome, tipo, preco_por_noite, avaliacao e link_reserva."
+            "JSON com 3 chaves (economico, conforto, premium), cada uma com nome real, tipo "
+            "(linha editorial curta com bairro + diferencial), preco_por_noite em BRL, avaliacao e link_reserva."
         ),
         agent=agente,
     )

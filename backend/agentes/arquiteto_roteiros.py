@@ -129,22 +129,23 @@ def executar_arquiteto(
     llm = LLM(
         model="openai/gpt-4.1-mini",
         api_key=configuracoes.openai_api_key or "sem-chave",
-        temperature=0.3,
+        temperature=0.5,  # voz editorial com personalidade, não resumo robótico
     )
 
     ferramenta_dados = criar_ferramenta_dados(voos, hoteis, atividades)
 
     agente = Agent(
-        role="Arquiteto de Roteiros de Viagem",
+        role="Editor de viagens da Trippin' — voz da marca",
         goal=(
-            f"Combinar as informações de voos, hotéis e atividades para montar "
-            f"3 roteiros completos e coerentes para {num_dias} dias em {destino}."
+            f"Escrever um resumo curto, específico e com opinião para cada um dos 3 roteiros de "
+            f"{num_dias} dias em {destino}, e validar o custo total de cada tier."
         ),
         backstory=(
-            "Sou um arquiteto de viagens sênior com 20 anos de experiência montando "
-            "pacotes personalizados para todos os perfis de viajante. "
-            "Transformo dados brutos de voos, hotéis e atrações em experiências memoráveis, "
-            "sempre equilibrando custo, conforto e enriquecimento cultural."
+            "Você é a voz editorial da Trippin': um amigo viajado, caloroso e direto, que vende a "
+            "viagem em poucas frases sem cair em clichê de folheto ('cidade encantadora', 'experiência "
+            "inesquecível' são proibidos). Você escreve em pt-BR, com personalidade, citando o que aquele "
+            "roteiro tem de concreto — o bairro onde se hospeda, uma experiência marcante, o espírito da "
+            "viagem. Cada tier conta uma história diferente, não a mesma com outro preço."
         ),
         tools=[ferramenta_dados],
         llm=llm,
@@ -153,18 +154,25 @@ def executar_arquiteto(
 
     tarefa = Task(
         description=(
-            f"Use a ferramenta 'Consultar Dados dos Agentes' para obter os dados de voos, hotéis e atividades. "
-            f"Monte 3 roteiros para {num_dias} dias em {destino}: econômico, conforto e premium. "
-            "Para cada roteiro use o tier correspondente de voo e hotel. As atividades são as mesmas para todos. "
-            "Calcule o custo total (voo + hotel × dias + atividades) e escreva um resumo de 2 frases. "
-            "Retorne APENAS JSON válido no formato:\n"
+            f"Use a ferramenta 'Consultar Dados dos Agentes' para ler voo, hotel e atividades de cada "
+            f"tier em {destino} ({num_dias} dias). Para cada roteiro (econômico, conforto, premium), "
+            "escreva um 'resumo' de 2–3 frases que:\n"
+            "- seja ESPECÍFICO àquele tier: cite o bairro/hotel daquele nível e 1–2 experiências reais "
+            "que estão nas atividades daquele tier (nomes próprios, não genéricos);\n"
+            "- tenha OPINIÃO e voz de amigo viajado — venda o roteiro, diga para quem ele é;\n"
+            "- DIFERENCIE de verdade os tiers: econômico (aventura esperta, autêntica e econômica), "
+            "conforto (o essencial bem curtido, sem stress), premium (curadoria, exclusividade, mimo). "
+            "Nada de clichê de folheto.\n\n"
+            "Valide também o custo total de cada tier (voo + hotel × dias + atividades).\n"
+            "Retorne APENAS JSON válido, sem texto fora dele:\n"
             '{"economico": {"resumo": "", "custo_total": 0.0}, '
             '"conforto": {"resumo": "", "custo_total": 0.0}, '
             '"premium": {"resumo": "", "custo_total": 0.0}}'
         ),
         expected_output=(
-            "JSON com 3 chaves (economico, conforto, premium), "
-            "cada uma com 'resumo' (string) e 'custo_total' (número)."
+            "JSON com 3 chaves (economico, conforto, premium), cada uma com 'resumo' (2–3 frases "
+            "específicas e opinativas, citando bairro/hotel e experiências reais daquele tier) e "
+            "'custo_total' (número)."
         ),
         agent=agente,
     )

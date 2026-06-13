@@ -70,11 +70,10 @@ def criar_ferramenta_voos(iata_origem: str, iata_destino: str, data_ida: str, nu
         # Modo demo ou sem credenciais → instrui o LLM a gerar dados plausíveis
         if configuracoes.modo_demo or not configuracoes.amadeus_client_id:
             return (
-                "API Amadeus não configurada. "
-                "Use seu conhecimento para gerar 5 opções realistas de voo "
-                f"de {iata_origem} para {iata_destino} na data {data_ida} "
-                f"para {num_viajantes} viajante(s). "
-                "Baseie os preços em valores reais de mercado para essa rota."
+                f"Sem API externa — use seu conhecimento real da rota {iata_origem}→{iata_destino} "
+                f"em {data_ida}, {num_viajantes} viajante(s). Companhias que de fato operam essa rota, "
+                "horários/durações plausíveis e preços de mercado em BRL. Siga o briefing da tarefa "
+                "para diferenciar os 3 tiers (econômico, conforto, premium)."
             )
 
         try:
@@ -139,19 +138,24 @@ def executar_agente_voos(
     llm = LLM(
         model="openai/gpt-4o-mini",
         api_key=configuracoes.openai_api_key or "sem-chave",
-        temperature=0.2,
-        max_tokens=800,
+        temperature=0.3,
+        max_tokens=1000,
         timeout=60,
     )
 
     ferramenta_voos = criar_ferramenta_voos(iata_origem, iata_destino, data_ida, num_viajantes)
 
     agente = Agent(
-        role="Flight Expert",
-        goal=f"Find flights {iata_origem}→{iata_destino} in 3 tiers: economy, comfort, premium.",
+        role="Especialista em passagens aéreas",
+        goal=(
+            f"Indicar a melhor opção de voo {iata_origem}→{iata_destino} para cada tier "
+            "(econômico, conforto, premium), com lógica distinta de companhia, classe e horário."
+        ),
         backstory=(
-            "Expert in airfare with deep knowledge of routes, airlines, prices, and schedules. "
-            "When API unavailable, generates realistic market-accurate flight options."
+            "Você conhece a malha aérea real: quais companhias operam cada rota, quais fazem conexão, "
+            "que horários existem e o que cada cabine entrega. Sabe que tier não é só preço — é a "
+            "decisão entre economizar pegando conexão/madrugada e chegar inteiro num voo direto em "
+            "classe superior. Quando não há API, gera opções fiéis ao mercado dessa rota."
         ),
         tools=[ferramenta_voos],
         llm=llm,
@@ -160,13 +164,27 @@ def executar_agente_voos(
 
     tarefa = Task(
         description=(
-            f"Use 'Buscar Voos Amadeus' for {iata_origem}→{iata_destino} on {data_ida}, "
-            f"{num_viajantes} passenger(s). If tool says to generate data, create realistic options. "
-            "Return ONLY valid JSON:\n"
+            f"Indique 1 voo por tier para {iata_origem}→{iata_destino} em {data_ida}, "
+            f"{num_viajantes} viajante(s). Use a ferramenta 'Buscar Voos Amadeus' como apoio.\n\n"
+            "Os 3 tiers têm LÓGICA DIFERENTE (não é o mesmo voo com preço trocado):\n"
+            "• econômico — o mais barato que faça sentido: pode ter conexão ou horário ruim "
+            "(madrugada/red-eye), classe econômica, companhias low-cost ou tarifa básica.\n"
+            "• conforto — o equilíbrio sensato: preferir voo direto ou 1 conexão curta, em "
+            "companhia de boa reputação e horário civilizado, classe econômica/premium economy.\n"
+            "• premium — a melhor experiência: voo direto quando existir, melhor companhia da rota, "
+            "classe executiva/primeira, horário que chega descansado.\n\n"
+            "Use companhias que REALMENTE operam a rota; horários e durações plausíveis (atente a "
+            "fuso e voos noturnos que chegam no dia seguinte); preços em BRL coerentes com cada tier. "
+            "No campo 'companhia', inclua a classe entre parênteses — ex.: 'LATAM (Econômica)', "
+            "'Air France (Executiva)'.\n"
+            "Retorne APENAS JSON válido, sem texto fora dele:\n"
             '{"economico":{"companhia":"","partida":"YYYY-MM-DDTHH:MM:SS","chegada":"YYYY-MM-DDTHH:MM:SS","preco":0.0,"link_reserva":null},'
             '"conforto":{...},"premium":{...}}'
         ),
-        expected_output="JSON with keys economico, conforto, premium — each with companhia, partida, chegada, preco, link_reserva.",
+        expected_output=(
+            "JSON com chaves economico, conforto, premium — cada uma com companhia (incluindo a classe), "
+            "partida, chegada, preco e link_reserva. Tiers diferenciados por companhia, classe e horário."
+        ),
         agent=agente,
     )
 

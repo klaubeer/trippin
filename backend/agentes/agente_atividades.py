@@ -26,6 +26,13 @@ from config import configuracoes
 
 GOOGLE_PLACES_URL = "https://maps.googleapis.com/maps/api/place/textsearch/json"
 
+# Nomes dos meses em pt-BR — usados para dar ao agente o contexto de sazonalidade
+# (clima, alta/baixa temporada, festivais) sem depender de locale do servidor.
+MESES_PT = [
+    "", "janeiro", "fevereiro", "março", "abril", "maio", "junho",
+    "julho", "agosto", "setembro", "outubro", "novembro", "dezembro",
+]
+
 
 def _dados_mock_atividades(destino: str, num_dias: int) -> dict[str, list[dict]]:
     """
@@ -72,11 +79,12 @@ def criar_ferramenta_atividades(destino: str):
         """
         if configuracoes.modo_demo or not configuracoes.google_places_api_key:
             return (
-                "API Google Places não configurada. "
-                f"Use seu conhecimento para listar os principais pontos turísticos, "
-                f"restaurantes e atrações de {destino}. "
-                "Para cada lugar inclua nome real ou plausível, descrição, "
-                "custo estimado em BRL e coordenadas geográficas aproximadas."
+                f"Sem API externa — use seu conhecimento real de {destino}. "
+                "Liste lugares ESPECÍFICOS e nomeados (atrações, bairros, miradouros, "
+                "restaurantes, bares, mercados, experiências), não categorias genéricas. "
+                "Prefira lugares que você realmente conhece a inventar nomes. "
+                "Para cada um: nome real, por que vale a pena, custo em BRL e "
+                "coordenadas (lat/lng) precisas. Siga à risca o briefing da tarefa."
             )
 
         try:
@@ -134,26 +142,32 @@ def executar_agente_atividades(
     Fallback: _dados_mock_atividades se o JSON for inválido.
     """
     num_dias = (data_fim - data_inicio).days
+    mes_pt = MESES_PT[data_inicio.month]
+    periodo = f"{data_inicio.strftime('%d/%m/%Y')} a {data_fim.strftime('%d/%m/%Y')}"
 
     llm = LLM(
         model="openai/gpt-4.1-mini",
         api_key=configuracoes.openai_api_key or "sem-chave",
-        temperature=0.4,
+        temperature=0.6,  # mais alto: queremos personalidade e opinião, não lista neutra
         max_tokens=6000,
     )
 
     ferramenta_atividades = criar_ferramenta_atividades(destino)
 
     agente = Agent(
-        role="Planejador de Experiências de Viagem",
+        role="Curador de viagens local e opinativo",
         goal=(
-            f"Criar 3 roteiros de atividades diferenciados por perfil de viajante "
-            f"para {num_dias} dias em {destino}: econômico, conforto e premium."
+            f"Montar 3 roteiros de {num_dias} dias em {destino} (econômico, conforto, premium) "
+            "que pareçam escritos por um amigo que mora lá: lugares nomeados, escolhas com "
+            "opinião e justificativa, ritmo realista e lógica geográfica."
         ),
         backstory=(
-            "Sou um planejador de viagens com 10 anos de experiência criando "
-            "roteiros personalizados para todos os perfis. Conheço cada cidade "
-            "profundamente — das opções gratuitas até as experiências mais exclusivas."
+            f"Você morou em {destino} e conhece a cidade pela vivência, não por guia de banca. "
+            "Sabe qual fila não vale a pena, qual mirante render no fim de tarde, onde os locais "
+            "comem de verdade e qual 'atração imperdível' é só armadilha de turista. Você tem GOSTO "
+            "e OPINIÃO — recomenda como quem indica para um amigo querido, dizendo o porquê de cada "
+            "escolha, o que pedir, o melhor horário e o detalhe que ninguém conta. Você odeia roteiro "
+            "genérico e desfile de obviedades."
         ),
         tools=[ferramenta_atividades],
         llm=llm,
@@ -162,20 +176,48 @@ def executar_agente_atividades(
 
     tarefa = Task(
         description=(
-            f"Use a ferramenta 'Buscar Atividades Google Places' para encontrar atrações em {destino}. "
-            f"Faça buscas por 'pontos turísticos', 'museus' e 'restaurantes'. "
-            f"Monte 3 roteiros DIFERENTES de {num_dias} dias com 2 atividades por dia (manhã e tarde):\n"
-            "- econômico: atrações gratuitas, museus baratos, comida de rua (custo_estimado R$0–80)\n"
-            "- conforto: museus principais, passeios guiados, restaurantes tradicionais (custo_estimado R$50–200)\n"
-            "- premium: tours VIP privativos, fine dining, experiências exclusivas (custo_estimado R$200–800)\n\n"
-            "Preços em BRL. Use coordenadas geográficas reais de cada lugar.\n"
-            "Retorne APENAS JSON válido no formato:\n"
+            f"Monte 3 roteiros de {num_dias} dias em {destino}, viagem de {periodo} "
+            f"(mês: {mes_pt}). Use a ferramenta 'Buscar Atividades Google Places' como apoio, "
+            "mas a curadoria, a voz e as escolhas são suas.\n\n"
+
+            "=== BARRA DE QUALIDADE (inegociável) ===\n"
+            "1. ESPECÍFICO: sempre o nome próprio do lugar (restaurante, bar, museu, rua, mirante, "
+            "mercado, bairro). NUNCA 'um bom restaurante local' ou 'museu da cidade'. Prefira lugares "
+            "reais que você conhece; só invente se não houver alternativa, e mesmo assim que seja crível.\n"
+            "2. O PORQUÊ: cada 'descricao' (2–3 frases) diz por que VOCÊ escolheu aquilo — o que ver/pedir, "
+            "o melhor momento, um detalhe não óbvio ou dica de quem é de casa. Tom de amigo, com opinião.\n"
+            "3. SEM ARMADILHA DE TURISTA: evite o óbvio caro e fraco; quando citar um clássico, diga como "
+            "fazê-lo bem (horário, entrada alternativa) ou ofereça a versão que os locais preferem.\n"
+            "4. LÓGICA GEOGRÁFICA: agrupe as atividades de um mesmo dia no mesmo bairro/região para "
+            "minimizar deslocamento; encadeie os dias percorrendo a cidade de forma coerente. As "
+            "coordenadas (lat/lng) precisam ser REAIS e precisas — elas vão num mapa.\n"
+            "5. RITMO REALISTA: 2 blocos por dia (manhã e tarde) e, em dias-chave, um 3º bloco à noite "
+            "(jantar/bar/vida noturna). Horários plausíveis. Não empilhe atrações cansativas. Inclua "
+            "comida de verdade ao longo da viagem. Dia 1 = chegada: comece leve e perto da hospedagem, "
+            "feche com um bom jantar. Último dia: nada de correria, algo tranquilo pensando na partida.\n"
+            f"6. SAZONALIDADE: é {mes_pt}. Considere clima, alta/baixa temporada, festivais/feriados e "
+            "o que evitar nesse período. Se algo estiver fora de época ou fechado, não recomende.\n\n"
+
+            "=== OS 3 TIERS TÊM LÓGICA DE ESCOLHA DIFERENTE (não é o mesmo roteiro com preço trocado) ===\n"
+            "• econômico (custo_estimado R$0–80) — olhar de quem viaja esperto: o melhor de graça ou "
+            "barato. Bairros a pé, mirantes, mercados, comida de rua e botecos, parques, dias de museu "
+            "grátis, transporte público. Prioriza autenticidade e descoberta sobre conforto.\n"
+            "• conforto (R$50–250) — os ícones bem feitos, sem turistar mal: principais atrações com "
+            "ingresso/sem fila quando vale, bairros charmosos, restaurantes queridos de preço médio, "
+            "um ou outro tour bom. Equilíbrio entre ver o essencial e curtir com calma.\n"
+            "• premium (R$200–1500) — curadoria de concierge: o que dinheiro e bom gosto abrem. Guias "
+            "privativos, mesas disputadas/alta gastronomia, acesso especial (após o horário, nos "
+            "bastidores), experiências únicas (barco privativo, chef's table, day trip com motorista). "
+            "Exclusividade e história, não só 'a versão cara do mesmo passeio'.\n\n"
+
+            "Custos em BRL (estimados, por pessoa). Retorne APENAS JSON válido, sem texto fora dele:\n"
             '{"economico": [{"nome": "", "dia": 1, "horario": "09:00:00", "descricao": "", "custo_estimado": 0.0, "latitude": 0.0, "longitude": 0.0}], '
             '"conforto": [...], "premium": [...]}'
         ),
         expected_output=(
-            "JSON com 3 chaves (economico, conforto, premium), cada uma sendo uma lista de atividades "
-            f"para {num_dias} dias com campos: nome, dia, horario, descricao, custo_estimado, latitude, longitude."
+            "JSON com 3 chaves (economico, conforto, premium), cada uma uma lista de atividades "
+            f"cobrindo os {num_dias} dias, com nome próprio do lugar, descricao opinativa (o porquê), "
+            "horario plausível, custo_estimado em BRL e latitude/longitude reais. Tiers com lógicas distintas."
         ),
         agent=agente,
     )
